@@ -1,5 +1,7 @@
 #include<Servo.h>
 
+Servo servo;                    //Create an object myServo
+
 //Arduino PWM Speed Control： E1 is right motor; E2 is left motor
 int E1 = 5;  
 int M1 = 4; 
@@ -8,7 +10,7 @@ int M2 = 7;
 
 int mainTrig = 12; 
 int mainEcho = 11;
-int servo = 13;
+int servoPin = 13;
 
 int maxSpeed = 255;
 int Rscanval, MRscanval, Cscanval, MLscanval,  Lscanval;
@@ -22,21 +24,21 @@ void setup()
     pinMode(M2, OUTPUT);
     pinMode(mainTrig, OUTPUT);
     pinMode(mainEcho, INPUT);
-    pinMode(servo. OUTPUT);
+    pinMode(servoPin, OUTPUT);
 } 
 
 void loop() 
 { 
   int confirm;
 
-  MoveForward();
-  while(SensorScan_Main(mainTrig, mainEcho) >= 10){
-    if(SensorScan_Main(mainTrig, mainEcho) < 10){
+  moveForward(255);
+  while(sensorScanMain(mainTrig, mainEcho) >= 10){
+    if(sensorScanMain(mainTrig, mainEcho) < 10){
       break;
     }
   }
 
-    ScanAround();
+    scanAround();
 
     char c=decide();
       
@@ -51,7 +53,7 @@ void loop()
       num_cycle = 0;  
     }*/
 
-    cm_f = SensorScan_Main(SensorTrig, SensorEcho);
+    long cm_f = sensorScanMain(mainTrig, mainEcho);
 
 //.....
    /* if(cm_f <= distanceLimit_Front){
@@ -76,14 +78,21 @@ void loop()
     Serial.println("cm");*/
 }
 
-void MoveForward(void){
+void moveForward(long power){
    digitalWrite(M1, HIGH);
    digitalWrite(M2, HIGH);
-   analogWrite(E1, 255);
-   analogWrite(E2, 255);
+   analogWrite(E1, power);
+   analogWrite(E2, power);
 }
 
-void Decelerate_Stop(int decelerateLevel){
+void suddenStop(){
+   digitalWrite(M1, HIGH);
+   digitalWrite(M2, HIGH);
+   analogWrite(E1, 0);
+   analogWrite(E2, 0);
+  }
+
+void deceleToStop(int level){
   int i;
 
   for(i = 255; i >= 0; i = i - level){
@@ -94,7 +103,7 @@ void Decelerate_Stop(int decelerateLevel){
   }
 }
 
-void TurnRight(long Time){
+void turnRight(long Time){
   unsigned long oldtime; 
 
   oldtime = millis();
@@ -107,7 +116,7 @@ void TurnRight(long Time){
   }
 }
 
-void TurnLeft(long Time){
+void turnLeft(long Time){
   unsigned long oldtime; 
 
   oldtime = millis();
@@ -120,62 +129,63 @@ void TurnLeft(long Time){
   }
 }
 
-void ScanAround () {
+void scanAround () {
   unsigned long oldtime;
 
+  long decelerateLevel=16;
   Serial.println("ScanAround");
   /*oldtime = millis();*/
-  Cscanval = SensorScan_Main(SensorTrig, SensorEcho);
+  Cscanval = sensorScanMain(mainTrig, mainEcho);
   if(Cscanval < distancelimit_f){
-    Decelerate_Stop(decelerateLevel);
+    deceleToStop(decelerateLevel);
   }
   servo.write(120);
   
  
   Serial.println("Already at 120 degree");
-  MLscanval = SensorScan_Main(SensorTrig, SensorEcho);
+  MLscanval = sensorScanMain(mainTrig, mainEcho);
   if(MLscanval < distancelimit_f){
-    Decelerate_Stop(decelerateLevel);
+    deceleToStop(decelerateLevel);
   }
   servo.write(160);
 
-  Lscanval = SensorScan_Main(SensorTrig, SensorEcho);
+  Lscanval = sensorScanMain(mainTrig, mainEcho);
   if(Lscanval < distancelimit_f){
-    Decelerate_Stop(decelerateLevel);  
+    deceleToStop(decelerateLevel);  
   }
   servo.write(120);
 
-  MLscanval = SensorScan_Main(SensorTrig, SensorEcho);
+  MLscanval = sensorScanMain(mainTrig, mainEcho);
   if(MLscanval < distancelimit_f){
-    Decelerate_Stop(decelerate_Level);  
+    deceleToStop(decelerateLevel);  
   }
   servo.write(80);
 
-  Cscanval = SensorScan_Main(SensorTrig, SensorEcho);
+  Cscanval = sensorScanMain(mainTrig, mainEcho);
   if(Cscanval < distancelimit_f){
-    Decelerate_Stop(decelerateLevel);  
+    deceleToStop(decelerateLevel);  
   }
   servo.write(40);
 
-  MRscanval = SensorScan_Main(SensorTrig, SensorEcho);
+  MRscanval = sensorScanMain(mainTrig, mainEcho);
   if(MRscanval < distancelimit_f){
-    Decelerate_Stop(decelerateLevel);  
+    deceleToStop(decelerateLevel);  
   }
-  servo_sensor.write(0);
+  servo.write(0);
 
-  servo_sensor.write(80);
-  while(millis() - oldtime <= 300){
+  servo.write(80);
+  /*while(millis() - oldtime <= 300){
     if(Scan_Vertical() == 'B'){
       MoveBack(Backtime);
       TurnRight(200);
     }  
-  }
+  }*/
 }
 
-char Decide(){
+char decide(){
   char choice;
-  ScanAround();
-  if(LscanVal > RcanVal && LscanVal > cScanVal){
+  scanAround();
+  if(Lscanval > Rscanval && Lscanval > Cscanval){
     choice = 'L';
   }
   else if(Rscanval > Lscanval && Rscanval > Cscanval){
@@ -187,7 +197,7 @@ char Decide(){
   return choice;
 }
 
-long SensorScan_Main (int Trigpin, int Echopin){
+long sensorScanMain (int Trigpin, int Echopin){
     long duration, cm;
     
     digitalWrite(Trigpin, LOW);
@@ -199,7 +209,7 @@ long SensorScan_Main (int Trigpin, int Echopin){
 
     duration = pulseIn(Echopin, HIGH);
 
-    cm = microsecondsToCentimeters(duration);
+    cm = 0;
 
     return cm;
 }
