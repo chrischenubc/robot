@@ -30,6 +30,7 @@ void setup()
   pinMode(ECHO_PIN, INPUT);
   pinMode(SERVO_PIN, OUTPUT);
   pinMode(SWITCH_PIN, INPUT);
+  Serial.begin(9600);
   
   //interrupt when button is read HIGH
   attachInterrupt(digitalPinToInterrupt(SWITCH_PIN), isr, HIGH); 
@@ -45,8 +46,9 @@ void loop()
 {    
    /* choose the mode based on the flag we have */    
    //currently set flag1 to test mode 1 
-    flag=1;
-    chooseMode(flag);
+   /* flag=1;
+    chooseMode(flag);*/
+    mode1();
 }
 
 void chooseMode(int flag){
@@ -63,15 +65,20 @@ void chooseMode(int flag){
 }
 void mode1(){
   moveForward(255);
+  flag=1;
   while (readSonar() >= DISTANCE_LIMIT) {
-    if(flag!=1); return; //check the interrupt flag
+    //if(flag!=1); return; //check the interrupt flag
     if (readSonar() < DISTANCE_LIMIT) {
-       decelerate(DECELERATION);
+      Stop();
+     //  decelerate(DECELERATION);
       break;
     }
   }
+  Serial.print("scan!!!!");
+  decelerate(DECELERATION);
+  delay(2000);
   int scanDegree=scanAround(4);
-  if(flag!=1); return; //check the interrupt flag
+//  if(flag!=1); return; //check the interrupt flag
   rotate(scanAround(4));  
 }
 
@@ -202,8 +209,8 @@ long readSonar(){
     long temp=readTmpLM();                 //read temperature
     long sound_speed=331.5 + (0.6 * temp);                 //calculate the sound speed at the point
     distance = (duration * sound_speed * 0.0001)/2;        //compute distance from duration of echo Pin
-    
-          delay(50); //Warning: make delay 50ms
+    Serial.println(distance);
+       delay(500); //Warning: make delay 50ms
     if (distance >= 200 || distance <= 0){   //deciding whether or not distance is reasonable
         return(-1);                         //if not, return -1
     }
