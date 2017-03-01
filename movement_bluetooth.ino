@@ -17,6 +17,8 @@ void setup()
 { 
     pinMode(M1, OUTPUT);   
     pinMode(M2, OUTPUT);
+    Serial.begin(9600);
+    BT.begin(9600);
 } 
 
 void loop() 
@@ -113,6 +115,7 @@ void read_instruction(){
       // if text arrived in from BT serial
 
       instruction = BT .read();
+      Serial.println(instruction);
       if(instruction == 'R'){             //turn right instruction
         TurnRight(1500);                  // I think the time interval for this is quite long
         BT.println("Turn Right");
