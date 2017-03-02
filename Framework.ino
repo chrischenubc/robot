@@ -1,6 +1,7 @@
 #include<Servo.h>
+#include <SoftwareSerial.h>
 Servo servo;                    //Create an object myServo
-
+SoftwareSerial BT(0, 1); 
 //robot motor pin configuration
 //Arduino PWM Speed Control： E1 is right motor; E2 is left motor
 const int E1 = 5;
@@ -33,11 +34,15 @@ void setup()
 {
   pinMode(M1, OUTPUT);
   pinMode(M2, OUTPUT);
+  
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
-  servo.attach(SERVO_PIN);
+ 
   pinMode(SWITCH_PIN, INPUT);
+
+  servo.attach(SERVO_PIN);
   Serial.begin(9600);
+  BT.begin(9600);
   
   //interrupt when button is read HIGH
   attachInterrupt(digitalPinToInterrupt(SWITCH_PIN), isr, HIGH); 
@@ -53,9 +58,9 @@ void loop()
 {    
    /* choose the mode based on the flag we have */    
    //currently set flag1 to test mode 1 
-   /* flag=1;
-    chooseMode(flag);*/
- mode1();
+    flag=1;
+    chooseMode(flag);
+
     
 }
 
@@ -73,24 +78,24 @@ void chooseMode(int flag){
 }
 void mode1(){
   moveForward(255);
-  flag=1;
   do {
     Serial.println("moving forward");
-    //if(flag!=1); return; //check the interrupt flag
+    if(flag!=1) {
+      return; //check the interrupt flag
+    }
     dis=readSonar();
     if (dis < DISTANCE_LIMIT  && dis !=-1) {
      decelerate(DECELERATION);
-     Stop();
+     
      Serial.println("break out the loop!!!!");
-      break;
+     break;
     }
      dis=readSonar();
-  }while(dis >= DISTANCE_LIMIT  || dis ==-1);
+  }while(dis >= DISTANCE_LIMIT || dis ==-1);
  
-  //decelerate(DECELERATION);
-//  delay(2000);  //this delay is for testing use
- 
-//  if(flag!=1); return; //check the interrupt flag
+  if(flag!=1){
+    return; //check the interrupt flag
+  }
   int scanVal=scanAround(4);
   rotate(scanVal);  
 }
@@ -128,8 +133,8 @@ void Stop() {
  * right now, just use arbitary level and DISTANCE_LIMIT
  */
  
-void decelerate(int level) {
-  for (int i = 255; i >= 0; i = i - level) {
+void decelerate(int DECELERATION) {
+  for (int i = 255; i >= 0; i = i - DECELERATION) {
     digitalWrite(M1, HIGH);
     digitalWrite(M2, HIGH);
     analogWrite(E1, i);
@@ -221,7 +226,7 @@ long readSonar(){
     digitalWrite(TRIG_PIN, LOW);            //set trigger pin to LOW
     duration = pulseIn(ECHO_PIN, HIGH);     //read echo pin
     long temp=readTmpLM();                 //read temperature
-    temp=23;
+    temp=23; //TODO:change to LM 35 temp
     long sound_speed=331.5 + (0.6 * temp);                 //calculate the sound speed at the point
     distance = (duration * sound_speed * 0.0001)/2;        //compute distance from duration of echo Pin
     Serial.println(distance);
@@ -258,7 +263,51 @@ int readSwitch(){
           return 1;
       }
     return 0;
-  }
+}
+
+
+/****************************************************************************
+/*
+ * This method is to use Bluetooth to control the car
+ */
+void read_instruction(){
+    char instruction;
+  
+    if( BT.available()){
+      // if text arrived in from BT serial
+
+      instruction = BT .read();
+      Serial.println(instruction);
+      if(instruction == 'R'){             //turn right instruction
+        turnRight(750);                  // I think the time interval for this is quite long
+        BT.println("Turn Right");
+       }else if(instruction == 'L'){      //turn left instruction
+        turnLeft(750);
+        BT.println("Turn Left");
+       }else if(instruction == 'M'){      //move forward instruction
+        moveForward(255);
+        BT.println("Move Forward");
+       }
+       //TODO: where is decelerate function????
+       else if(instruction == 'S'){      //sudden stop insturction  
+        Stop();
+        BT.println("Sudden Stop");
+        }
+        
+       else if(instruction == 'A'){     //switch mode to automatical driving
+            flag=1;
+            mode1();
+        }
+        
+        else{                            //instruction do not exist
+          BT.println("Wrong Instruction");
+          decelerate(255);
+          }
+ 
+  }else{
+      decelerate(255);              //if there is no instruction for car
+    }    
+}
   
 
 
