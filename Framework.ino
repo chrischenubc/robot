@@ -18,22 +18,24 @@ const int latchPin = 8;
 const int clockPin = 9;
 const int dataPin = 10;
 
-const int LM_READ_PIN = A0;      //Pin for LM-35 temperature sensor
+const int LM_PIN = A0;      //Pin for LM-35 temperature sensor
 const int SWITCH_PIN = 3;        //Pin for pull up Switch
 
 //define some constants here
 const int DISTANCE_LIMIT = 25;
 const int MAX_SPEED = 255;
 
-const int DECELERATION = 10;
+const int DECELERATION = 10
+;
 int flag=1;
+int dis;
 void setup()
 {
   pinMode(M1, OUTPUT);
   pinMode(M2, OUTPUT);
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
-  pinMode(SERVO_PIN, OUTPUT);
+  servo.attach(SERVO_PIN);
   pinMode(SWITCH_PIN, INPUT);
   Serial.begin(9600);
   
@@ -53,7 +55,8 @@ void loop()
    //currently set flag1 to test mode 1 
    /* flag=1;
     chooseMode(flag);*/
-    mode1();
+ mode1();
+    
 }
 
 void chooseMode(int flag){
@@ -71,17 +74,22 @@ void chooseMode(int flag){
 void mode1(){
   moveForward(255);
   flag=1;
-  while (readSonar() >= DISTANCE_LIMIT) {
+  do {
+    Serial.println("moving forward");
     //if(flag!=1); return; //check the interrupt flag
-    if (readSonar() < DISTANCE_LIMIT) {
-      decelerate(DECELERATION);
+    dis=readSonar();
+    if (dis < DISTANCE_LIMIT  && dis !=-1) {
+     decelerate(DECELERATION);
+     Stop();
+     Serial.println("break out the loop!!!!");
       break;
     }
-  }
-  Serial.print("scan!!!!");
-  decelerate(DECELERATION);
-  delay(2000);  //this delay is for testing use
-  int scanDegree=scanAround(4);
+     dis=readSonar();
+  }while(dis >= DISTANCE_LIMIT  || dis ==-1);
+ 
+  //decelerate(DECELERATION);
+//  delay(2000);  //this delay is for testing use
+ 
 //  if(flag!=1); return; //check the interrupt flag
   int scanVal=scanAround(4);
   rotate(scanVal);  
@@ -126,6 +134,7 @@ void decelerate(int level) {
     digitalWrite(M2, HIGH);
     analogWrite(E1, i);
     analogWrite(E2, i);
+    delay(20);
   }
 }
 
@@ -164,8 +173,8 @@ void turnLeft(long Time) {
   int vals[parts];
   int maxDegree=0;
   servo.write(0); //turn the servo to 0 degree
-  for(int i=0;i<parts;i++){
-     if(flag!=1); return -1; //check the interrupt flag
+  for(int i=0;i<=parts;i++){
+   //  if(flag!=1); return -1; //check the interrupt flag
     servo.write(i*180/parts);
     vals[i]=readSonar();
     if (vals[i]>=maxDegree){
@@ -212,10 +221,11 @@ long readSonar(){
     digitalWrite(TRIG_PIN, LOW);            //set trigger pin to LOW
     duration = pulseIn(ECHO_PIN, HIGH);     //read echo pin
     long temp=readTmpLM();                 //read temperature
+    temp=23;
     long sound_speed=331.5 + (0.6 * temp);                 //calculate the sound speed at the point
     distance = (duration * sound_speed * 0.0001)/2;        //compute distance from duration of echo Pin
     Serial.println(distance);
-       delay(500); //Warning: make delay 50ms
+       delay(50); //Warning: make delay 50ms
     if (distance >= 200 || distance <= 0){   //deciding whether or not distance is reasonable
         return(-1);                         //if not, return -1
     }
