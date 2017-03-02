@@ -1,5 +1,7 @@
 # G5_A_P1
 
+Goole doc link:https://docs.google.com/document/d/1y6tSNcZeVZh3gu8qlVy5E_jHCz_95UTNbs3lxT9faHc/edit
+
 ##Android App
 
 The code was based off of and was modified from the source code at https://github.com/Mayoogh/Arduino-Bluetooth-Basic
@@ -14,5 +16,5 @@ Serial communication works at 9600 baud rate.
 
 *Higher baud rate might solve the problem above. Higher baud rate should be encouraged I think because that means faster connection speed I think. However, testing with higher baud rates made the text communicating via Serial Monitor completely different and unintelligible
 
-All problems above will be demonstrated on Wednesday’s lab 29 Feb 17.
+All problems above will be demonstrated on Wednesdayâ€™s lab 29 Feb 17.
 
