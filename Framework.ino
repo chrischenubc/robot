@@ -13,8 +13,13 @@ const int TRIG_PIN = 12;
 const int ECHO_PIN = 11;
 const int SERVO_PIN = 13;
 
-const int LM_PIN=10;              //LM_35 pin configuration
-const int SWITCH_PIN = 10;        //Pin for pull up Switch
+//shift register pin configuration
+const int latchPin = 8;
+const int clockPin = 9;
+const int dataPin = 10;
+
+const int LM_READ_PIN = A0;      //Pin for LM-35 temperature sensor
+const int SWITCH_PIN = 3;        //Pin for pull up Switch
 
 //define some constants here
 const int DISTANCE_LIMIT = 25;
@@ -69,17 +74,17 @@ void mode1(){
   while (readSonar() >= DISTANCE_LIMIT) {
     //if(flag!=1); return; //check the interrupt flag
     if (readSonar() < DISTANCE_LIMIT) {
-      Stop();
-     //  decelerate(DECELERATION);
+      decelerate(DECELERATION);
       break;
     }
   }
   Serial.print("scan!!!!");
   decelerate(DECELERATION);
-  delay(2000);
+  delay(2000);  //this delay is for testing use
   int scanDegree=scanAround(4);
 //  if(flag!=1); return; //check the interrupt flag
-  rotate(scanAround(4));  
+  int scanVal=scanAround(4);
+  rotate(scanVal);  
 }
 
 //basic functionality 2

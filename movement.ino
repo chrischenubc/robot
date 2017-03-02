@@ -19,7 +19,7 @@ void setup()
 } 
 
 void loop() 
-{ 
+{ /*
     MoveForward();
     delay(2000);
     Decelerate_Stop(255);
@@ -42,7 +42,7 @@ void loop()
     MoveForward();
     delay(2000);
     Decelerate_Stop(8);
-    delay(5000);
+    delay(5000);*/
 }
 
 void MoveForward(void){
