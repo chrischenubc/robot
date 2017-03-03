@@ -28,8 +28,16 @@ const int MAX_SPEED = 255;
 
 const int DECELERATION = 10
 ;
+
+volatile byte half_revolutions;
+unsigned int rpm;
+unsigned long timeold;
+
 volatile int flag=1;
 int dis;
+
+char instr;
+
 void setup()
 {
   pinMode(M1, OUTPUT);
@@ -46,6 +54,7 @@ void setup()
   
   //interrupt when button is read HIGH
   attachInterrupt(digitalPinToInterrupt(SWITCH_PIN), isr, HIGH); 
+//   attachInterrupt(0, rpm_fun, RISING);
 }
 
 void isr(){
@@ -58,7 +67,7 @@ void loop()
 {    
    /* choose the mode based on the flag we have */    
    //currently set flag1 to test mode 1 
-    flag=1;
+    //flag=1;
     chooseMode(flag);
 
     
@@ -76,13 +85,20 @@ void chooseMode(int flag){
     mode1();
   }
 }
+
 void mode1(){
   moveForward(255);
   do {
     Serial.println("moving forward");
-    if(flag!=1) {
+    
+    if(flag!=1 || (instr=BT.read()) =='B' || instr =='M' ) {
+      switch(instr){
+        case 'B':flag=2;
+        case 'M':flag=3;
+      }
       return; //check the interrupt flag
     }
+    
     dis=readSonar();
     if (dis < DISTANCE_LIMIT  && dis !=-1) {
      decelerate(DECELERATION);
@@ -93,9 +109,14 @@ void mode1(){
      dis=readSonar();
   }while(dis >= DISTANCE_LIMIT || dis ==-1);
  
-  if(flag!=1){
-    return; //check the interrupt flag
-  }
+  
+    if(flag!=1 || (instr=BT.read()) =='B' || instr =='M' ) {
+      switch(instr){
+        case 'B':flag=2;
+        case 'M':flag=3;
+      }
+      return; //check the interrupt flag
+    }
   int scanVal=scanAround(4);
   rotate(scanVal);  
 }
@@ -107,7 +128,9 @@ void mode2(){
 
 //additional functionality 
 void mode3(){
-  
+  while(flag==3){
+    read_instruction();
+  }
 }
 
 void moveForward(long power) {
@@ -179,7 +202,14 @@ void turnLeft(long Time) {
   int maxDegree=0;
   servo.write(0); //turn the servo to 0 degree
   for(int i=0;i<=parts;i++){
-   //  if(flag!=1); return -1; //check the interrupt flag
+     
+    if(flag!=1 || (instr=BT.read()) =='B' || instr =='M' ) {
+      switch(instr){
+        case 'B':flag=2;
+        case 'M':flag=3;
+      }
+      return -1; //check the interrupt flag
+    }
     servo.write(i*180/parts);
     vals[i]=readSonar();
     if (vals[i]>=maxDegree){
@@ -293,10 +323,17 @@ void read_instruction(){
         Stop();
         BT.println("Sudden Stop");
         }
-        
        else if(instruction == 'A'){     //switch mode to automatical driving
             flag=1;
-            mode1();
+          
+        }
+        else if(instruction == 'B'){     //switch mode to automatical driving
+            flag=2;
+          
+        }
+        else if(instruction == 'M'){     //switch mode to automatical driving
+            flag=3;
+            
         }
         
         else{                            //instruction do not exist
