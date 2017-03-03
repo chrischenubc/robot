@@ -28,7 +28,7 @@ const int MAX_SPEED = 255;
 
 const int DECELERATION = 10
 ;
-int flag=1;
+volatile int flag=1;
 int dis;
 void setup()
 {
