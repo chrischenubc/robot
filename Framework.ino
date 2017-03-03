@@ -1,6 +1,7 @@
 #include<Servo.h>
+#include <SoftwareSerial.h>
 Servo servo;                    //Create an object myServo
-
+SoftwareSerial BT(9, 10); 
 //robot motor pin configuration
 //Arduino PWM Speed Control： E1 is right motor; E2 is left motor
 const int E1 = 5;
@@ -27,20 +28,33 @@ const int MAX_SPEED = 255;
 
 const int DECELERATION = 10
 ;
-int flag=1;
+
+volatile byte half_revolutions;
+unsigned int rpm;
+unsigned long timeold;
+
+volatile int flag=1;
 int dis;
+
+char instr;
+
 void setup()
 {
   pinMode(M1, OUTPUT);
   pinMode(M2, OUTPUT);
+  
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
-  servo.attach(SERVO_PIN);
+ 
   pinMode(SWITCH_PIN, INPUT);
+
+  servo.attach(SERVO_PIN);
   Serial.begin(9600);
+  BT.begin(9600);
   
   //interrupt when button is read HIGH
   attachInterrupt(digitalPinToInterrupt(SWITCH_PIN), isr, HIGH); 
+//   attachInterrupt(0, rpm_fun, RISING);
 }
 
 void isr(){
@@ -53,9 +67,13 @@ void loop()
 {    
    /* choose the mode based on the flag we have */    
    //currently set flag1 to test mode 1 
-   /* flag=1;
-    chooseMode(flag);*/
- mode1();
+    //flag=1;
+   /*chooseMode(flag);
+    Stop();
+    delay(2000);*/
+    read_instruction();
+    Stop();
+    delay(2000);
     
 }
 
@@ -71,38 +89,64 @@ void chooseMode(int flag){
     mode1();
   }
 }
+
 void mode1(){
   moveForward(255);
-  flag=1;
   do {
     Serial.println("moving forward");
-    //if(flag!=1); return; //check the interrupt flag
+
+    update_instr();
+    if(flag!=1 || instr =='2' || instr =='3' ) {
+      switch(instr){
+        case '2':flag=2;
+        case '3':flag=3;
+      }
+      return; //check the interrupt flag
+    }
+    
     dis=readSonar();
     if (dis < DISTANCE_LIMIT  && dis !=-1) {
      decelerate(DECELERATION);
-     Stop();
+     
      Serial.println("break out the loop!!!!");
-      break;
+     break;
     }
      dis=readSonar();
-  }while(dis >= DISTANCE_LIMIT  || dis ==-1);
+  }while(dis >= DISTANCE_LIMIT || dis ==-1);
  
-  //decelerate(DECELERATION);
-//  delay(2000);  //this delay is for testing use
- 
-//  if(flag!=1); return; //check the interrupt flag
+    update_instr();
+    if(flag!=1 || instr =='2' || instr =='3' ) {
+      switch(instr){
+        case '2':flag=2;
+        case '3':flag=3;
+      }
+      return; //check the interrupt flag
+    }
   int scanVal=scanAround(4);
   rotate(scanVal);  
 }
 
 //basic functionality 2
 void mode2(){
-  
+
+  while(1) {
+    Serial.println("In mode 2");
+  update_instr();
+    if(flag!=2 || instr =='1' || instr =='3' ) {
+      switch(instr){
+        case '1':flag=1;
+        case '3':flag=3;
+      }
+      return; //check the interrupt flag
+    }
+  }
 }
 
 //additional functionality 
 void mode3(){
-  
+  while(flag==3){
+    read_instruction();
+  }
 }
 
 void moveForward(long power) {
@@ -128,8 +172,8 @@ void Stop() {
  * right now, just use arbitary level and DISTANCE_LIMIT
  */
  
-void decelerate(int level) {
-  for (int i = 255; i >= 0; i = i - level) {
+void decelerate(int DECELERATION) {
+  for (int i = 255; i >= 0; i = i - DECELERATION) {
     digitalWrite(M1, HIGH);
     digitalWrite(M2, HIGH);
     analogWrite(E1, i);
@@ -174,7 +218,13 @@ void turnLeft(long Time) {
   int maxDegree=0;
   servo.write(0); //turn the servo to 0 degree
   for(int i=0;i<=parts;i++){
-   //  if(flag!=1); return -1; //check the interrupt flag
+     
+    if(flag!=1 || (instr=BT.read()) =='B' || instr =='M' ) {
+      switch(instr){
+        case 'M':flag=3;
+      }
+      return -1; //check the interrupt flag
+    }
     servo.write(i*180/parts);
     vals[i]=readSonar();
     if (vals[i]>=maxDegree){
@@ -221,7 +271,7 @@ long readSonar(){
     digitalWrite(TRIG_PIN, LOW);            //set trigger pin to LOW
     duration = pulseIn(ECHO_PIN, HIGH);     //read echo pin
     long temp=readTmpLM();                 //read temperature
-    temp=23;
+    temp=23; //TODO:change to LM 35 temp
     long sound_speed=331.5 + (0.6 * temp);                 //calculate the sound speed at the point
     distance = (duration * sound_speed * 0.0001)/2;        //compute distance from duration of echo Pin
     Serial.println(distance);
@@ -258,7 +308,66 @@ int readSwitch(){
           return 1;
       }
     return 0;
-  }
-  
+}
 
+
+/****************************************************************************
+/*
+ * This method is to use Bluetooth to control the car
+ */
+void read_instruction(){
+    char instruction;
+  
+    if( BT.available()){
+      // if text arrived in from BT serial
+
+      instruction = BT .read();
+      Serial.println(instruction);
+      if(instruction == 'R'){             //turn right instruction
+        turnRight(750);                  // I think the time interval for this is quite long
+        Serial.println("Turn Right");
+       }else if(instruction == 'L'){      //turn left instruction
+        turnLeft(750);
+        Serial.println("Turn Left");
+       }else if(instruction == 'M'){      //move forward instruction
+        moveForward(255);
+        Serial.println("Move Forward");
+       }
+       //TODO: where is decelerate function????
+       else if(instruction == 'S'){      //sudden stop insturction  
+        Stop();
+        Serial.println("Sudden Stop");
+        }
+       else if(instruction == '1'){     //switch mode to automatical driving
+            flag=1;
+          
+        }
+        else if(instruction == '2'){     //switch mode to automatical driving
+            flag=2;
+          
+        }
+        else if(instruction == '3'){     //switch mode to automatical driving
+            flag=3;
+            
+        }
+        
+        else{                            //instruction do not exist
+          Serial.println("Wrong Instruction");
+          decelerate(255);
+          }
+ 
+  }else{
+      decelerate(255);              //if there is no instruction for car
+    }    
+}
+  
+void update_instr() {
+  if(BT.available()) {
+      instr = BT.read();
+      Serial.println("Bluetooth command received~~~~~~~~~~~~~~~~~~~");
+    } else {
+      instr = NULL;
+      Serial.println("No new Bluetooth command");
+    }
+}
 
