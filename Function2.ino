@@ -237,4 +237,3 @@ void lineFollowPrepare(){
 
   midVal = (maxSensorVal + minSensorVal)/2;
 }
-
