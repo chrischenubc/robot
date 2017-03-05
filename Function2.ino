@@ -25,6 +25,8 @@ const int SWITCH_PIN = 3;        //Pin for pull up Switch
 //const int lHEsensorPin = A1;
 //const int rHEsensorPin = A2;
 
+/**************************************************************/
+/**************************************************************/
 //Pins for 2 optical reflective sensors
 const int ORsensorpin_1 = A1;
 const int ORsensorpin_2 = A2;
@@ -39,10 +41,13 @@ const int DECELERATION = 10;
 int flag=1;
 
 //Declaration of variables for basic function 2
-const int LINE_FOLLOW_SPEED = 255;
-const int TURNING_SPEED = 200;
+const int LINE_FOLLOW_SPEED = 220;
+const int TURNING_SPEED_NORM = 200;
+const int TURNING_SPEED_DIFF = 160;
+const int TURNING_SPEED_MAX = 255;
+
 int midVal = 0;
-int minSensorVal = 0;
+int minSensorVal = 1023;
 int maxSensorVal = 0;
 
 int ORsensorVal_1;
@@ -64,7 +69,7 @@ void setup(){
   }
 
   lineFollowPrepare();
-  delay(1000);
+  delay(2000);
   
   Serial.begin(9600);
 }
@@ -81,6 +86,13 @@ void moveForward(long power) {
   digitalWrite(M2, HIGH);
   analogWrite(E1, power);
   analogWrite(E2, power);
+
+  /*Serial.println(ORsensorVal_1);
+    Serial.println(ORsensorVal_2);
+    Serial.println(ORsensorVal_3);
+    Serial.println(ORsensorVal_4);
+
+  Serial.println("In forward");*/   
 }
 
 
@@ -92,25 +104,15 @@ void Stop() {
   digitalWrite(M2, HIGH);
   analogWrite(E1, 0);
   analogWrite(E2, 0);
+  Serial.println("In Stop");
 }
 
 /*TODO: We need several testing to find a reasonable connection between 
  * level and DISTANCE_LIMIT to make it approach the object as much as possible
  * right now, just use arbitary level and DISTANCE_LIMIT
  */
- 
-void decelerate(int level) {
-  for (int i = 255; i >= 0; i = i - level) {
-    if(i < 0){
-      i = 0;
-    }
-    digitalWrite(M1, HIGH);
-    digitalWrite(M2, HIGH);
-    analogWrite(E1, i);
-    analogWrite(E2, i);
-  }
-}
 
+ 
 void turnLeft(int power, long Time) {
   unsigned long oldtime;
   oldtime = millis();
@@ -140,7 +142,40 @@ void turnRight(int power, long Time) {
 /***************************************************************************************************/
 
 //Additional moving functions for basic function 2
-void turnLeftForward(int power, long Time) {
+void turnLeftForward_Slow(int power, long Time) {
+  unsigned long oldtime;
+  oldtime = millis();
+
+  while (millis() - oldtime <= Time) {
+    digitalWrite(M1, HIGH);
+    digitalWrite(M2, HIGH);
+    analogWrite(E1, power);
+    analogWrite(E2, power - TURNING_SPEED_DIFF);
+
+    Serial.println("Left");
+    /*Serial.println(ORsensorVal_1);
+  Serial.println(ORsensorVal_2);
+  Serial.println(ORsensorVal_3);
+  Serial.println(ORsensorVal_4);*/
+
+  ORsensorVal_1 = analogRead(ORsensorpin_1);
+  ORsensorVal_2 = analogRead(ORsensorpin_2);
+  ORsensorVal_3 = analogRead(ORsensorpin_3);
+  ORsensorVal_4 = analogRead(ORsensorpin_4);
+
+    /*if( (analogRead(ORsensorpin_1) + analogRead(ORsensorpin_2))/2 <= ((analogRead(ORsensorpin_3) + analogRead(ORsensorpin_4))/2 + 200) ){
+      break;
+    }*/
+
+    if( (ORsensorVal_1 + ORsensorVal_2)/2 <= ((ORsensorVal_3 + ORsensorVal_4)/2 ) &&
+        !(ORsensorVal_1 > midVal + 50 &&  ORsensorVal_2 > midVal + 50 &&
+          ORsensorVal_3 > midVal + 50  && ORsensorVal_4 > midVal + 50 ) ){
+      break;
+    }
+  }
+}
+
+void turnLeftForward_Fast(int power, long Time) {
   unsigned long oldtime;
   oldtime = millis();
 
@@ -150,15 +185,60 @@ void turnLeftForward(int power, long Time) {
     analogWrite(E1, power);
     analogWrite(E2, 0);
 
-    if(((ORsensorVal_1 + ORsensorVal_2)/2) <= ((ORsensorVal_3 + ORsensorVal_4)/2 - 200)){
-      Stop();
-      delay(10);
+    Serial.println("FasterLeft");
+
+    /*Serial.println(ORsensorVal_1);
+      Serial.println(ORsensorVal_2);
+      Serial.println(ORsensorVal_3);
+      Serial.println(ORsensorVal_4);*/
+
+    ORsensorVal_1 = analogRead(ORsensorpin_1);
+    ORsensorVal_2 = analogRead(ORsensorpin_2);
+    ORsensorVal_3 = analogRead(ORsensorpin_3);
+    ORsensorVal_4 = analogRead(ORsensorpin_4);
+    
+    if( (ORsensorVal_1 + ORsensorVal_2)/2 <= ((ORsensorVal_3 + ORsensorVal_4)/2 ) && 
+        !(ORsensorVal_1 > midVal + 50 &&  ORsensorVal_2 > midVal + 50 &&
+          ORsensorVal_3 > midVal + 50  && ORsensorVal_4 > midVal + 50 ) ){
       break;
     }
   }
 }
 
-void turnRightForward(int power, long Time) {
+void turnRightForward_Slow(int power, long Time) {
+  unsigned long oldtime;
+  oldtime = millis();
+
+  while (millis() - oldtime <= Time) {
+    digitalWrite(M1, HIGH);
+    digitalWrite(M2, HIGH);
+    analogWrite(E1, power - TURNING_SPEED_DIFF);
+    analogWrite(E2, power);
+
+    /*Serial.println("Right");
+    Serial.println(ORsensorVal_1);
+  Serial.println(ORsensorVal_2);
+  Serial.println(ORsensorVal_3);
+  Serial.println(ORsensorVal_4);*/
+
+   ORsensorVal_1 = analogRead(ORsensorpin_1);
+  ORsensorVal_2 = analogRead(ORsensorpin_2);
+  ORsensorVal_3 = analogRead(ORsensorpin_3);
+  ORsensorVal_4 = analogRead(ORsensorpin_4);
+
+    /*if( ((analogRead(ORsensorpin_1) + analogRead(ORsensorpin_2))/2) >= ((analogRead(ORsensorpin_3) + analogRead(ORsensorpin_4))/2 + 200) ){
+      break;
+    }*/
+
+    if( (ORsensorVal_1 + ORsensorVal_2)/2 >= ((ORsensorVal_3 + ORsensorVal_4)/2) && 
+         !(ORsensorVal_1 > midVal + 50 &&  ORsensorVal_2 > midVal + 50 &&
+          ORsensorVal_3 > midVal + 50  && ORsensorVal_4 > midVal + 50 ) ){
+      break;
+    }
+  }
+}
+
+void turnRightForward_Fast(int power, long Time) {
   unsigned long oldtime;
   oldtime = millis();
 
@@ -168,42 +248,123 @@ void turnRightForward(int power, long Time) {
     analogWrite(E1, 0);
     analogWrite(E2, power);
 
-    if(((ORsensorVal_1 + ORsensorVal_2)/2) >= ((ORsensorVal_3 + ORsensorVal_4)/2 + 200)){
-      Stop();
-      delay(10);
+    /*Serial.println("FasterRight");
+    Serial.println(ORsensorVal_1);
+  Serial.println(ORsensorVal_2);
+  Serial.println(ORsensorVal_3);
+  Serial.println(ORsensorVal_4);*/
+
+   ORsensorVal_1 = analogRead(ORsensorpin_1);
+  ORsensorVal_2 = analogRead(ORsensorpin_2);
+  ORsensorVal_3 = analogRead(ORsensorpin_3);
+  ORsensorVal_4 = analogRead(ORsensorpin_4);
+
+    if( (ORsensorVal_1 + ORsensorVal_2)/2 >= ((ORsensorVal_3 + ORsensorVal_4)/2) && 
+         !(ORsensorVal_1 > midVal + 50 &&  ORsensorVal_2 > midVal + 50 &&
+          ORsensorVal_3 > midVal + 50  && ORsensorVal_4 > midVal + 50 ) ){
       break;
     }
   }
 }
 
-char lineFollow(){
-  int turningTime = 200;
+void sharpTurnLeft(int power, long Time) {
+  unsigned long oldtime;
+  oldtime = millis();
 
-  /*ORsensorVal_1 = analogRead(ORsensorpin_1);
+  while (millis() - oldtime <= Time) {
+    digitalWrite(M1, HIGH);
+    digitalWrite(M2, LOW);
+    analogWrite(E1, power);
+    analogWrite(E2, power);
+
+   ORsensorVal_1 = analogRead(ORsensorpin_1);
   ORsensorVal_2 = analogRead(ORsensorpin_2);
   ORsensorVal_3 = analogRead(ORsensorpin_3);
-  ORsensorVal_4 = analogRead(ORsensorpin_4);*/
+  ORsensorVal_4 = analogRead(ORsensorpin_4);
+
+    if( (ORsensorVal_1 + ORsensorVal_2)/2 >= ((ORsensorVal_3 + ORsensorVal_4)/2) && 
+         !(ORsensorVal_1 > midVal + 50 &&  ORsensorVal_2 > midVal + 50 &&
+          ORsensorVal_3 > midVal + 50  && ORsensorVal_4 > midVal + 50 ) ){
+      break;
+    }
+  }
+}
+
+void sharpTurnRight(int power, long Time) {
+  unsigned long oldtime;
+  oldtime = millis();
+
+  while (millis() - oldtime <= Time) {
+     digitalWrite(M1, LOW);
+    digitalWrite(M2, HIGH);
+    analogWrite(E1, power);
+    analogWrite(E2, power);
+    
+   ORsensorVal_1 = analogRead(ORsensorpin_1);
+  ORsensorVal_2 = analogRead(ORsensorpin_2);
+  ORsensorVal_3 = analogRead(ORsensorpin_3);
+  ORsensorVal_4 = analogRead(ORsensorpin_4);
+
+    if( (ORsensorVal_1 + ORsensorVal_2)/2 >= ((ORsensorVal_3 + ORsensorVal_4)/2) && 
+         !(ORsensorVal_1 > midVal + 50 &&  ORsensorVal_2 > midVal + 50 &&
+          ORsensorVal_3 > midVal + 50  && ORsensorVal_4 > midVal + 50 ) ){
+      break;
+    }
+  }
+}
+
+boolean checkBreakpoint(long Time) {
+  unsigned long oldtime;
+  oldtime = millis();
+
+  while(millis() - oldtime < Time){
+    moveForward(LINE_FOLLOW_SPEED);
+
+    ORsensorVal_1 = analogRead(ORsensorpin_1);
+    ORsensorVal_2 = analogRead(ORsensorpin_2);
+    ORsensorVal_3 = analogRead(ORsensorpin_3);
+    ORsensorVal_4 = analogRead(ORsensorpin_4);
+
+    if(!(ORsensorVal_1 > midVal + 50 &&  ORsensorVal_2 > midVal + 50 &&
+     ORsensorVal_3 > midVal + 50  && ORsensorVal_4 > midVal + 50) ){
+      return true;
+    }
+  }
+
+  return false;
+}
+
+char lineFollow(){
+  int turningTime = 1000;
+
+  ORsensorVal_1 = analogRead(ORsensorpin_1);
+  ORsensorVal_2 = analogRead(ORsensorpin_2);
+  ORsensorVal_3 = analogRead(ORsensorpin_3);
+  ORsensorVal_4 = analogRead(ORsensorpin_4);
 
   /*Serial.println(ORsensorVal_1);
   Serial.println(ORsensorVal_2);
   Serial.println(ORsensorVal_3);
   Serial.println(ORsensorVal_4);*/
+  Serial.print(midVal);
 
-  if((analogRead(ORsensorpin_1) + analogRead(ORsensorpin_2)/2) <= ((analogRead(ORsensorpin_3) + analogRead(ORsensorpin_4))/2 + 200) &&
+  Serial.println("wtf");
+  
+  /*if((analogRead(ORsensorpin_1) + analogRead(ORsensorpin_2)/2) <= ((analogRead(ORsensorpin_3) + analogRead(ORsensorpin_4))/2 + 200) &&
       ((analogRead(ORsensorpin_1) + analogRead(ORsensorpin_2)) >= ((analogRead(ORsensorpin_3) + analogRead(ORsensorpin_4))/2 - 200))){
           moveForward(LINE_FOLLOW_SPEED);
-          //Serial.println("In Forward");
+          Ser ial.println("In Forward");
   }
 
   if(((analogRead(ORsensorpin_1) + analogRead(ORsensorpin_2))/2) > ((analogRead(ORsensorpin_3) + analogRead(ORsensorpin_4))/2 + 200)){
     //Serial.println("In turningleft");
-    turnLeftForward(TURNING_SPEED, turningTime);
+    turnLeftForward_Slow(TURNING_SPEED, turningTime);
     //Stop();
   }
   
   if(((analogRead(ORsensorpin_1) + analogRead(ORsensorpin_2))/2) < ((analogRead(ORsensorpin_3) + analogRead(ORsensorpin_4))/2 - 200)){
     //Serial.println("In turningrigft");
-    turnRightForward(TURNING_SPEED, turningTime);
+    turnRightForward_Slow(TURNING_SPEED, turningTime);
     //Stop();
   }
   
@@ -211,6 +372,61 @@ char lineFollow(){
      analogRead(ORsensorpin_3) > midVal && analogRead(ORsensorpin_4) > midVal){
     //Serial.println("In Stop");
     Stop();
+  }*/
+
+  if(!(ORsensorVal_1 > midVal + 50 &&  ORsensorVal_2 > midVal + 50 &&
+     ORsensorVal_3 > midVal + 50  && ORsensorVal_4 > midVal + 50 )){
+
+    if( ((ORsensorVal_1 + ORsensorVal_2)/2 <= ((ORsensorVal_3 + ORsensorVal_4)/2 + 200)) &&
+        ((ORsensorVal_1 + ORsensorVal_2)/2 >= ((ORsensorVal_3 + ORsensorVal_4)/2 - 200)) ){
+          moveForward(LINE_FOLLOW_SPEED);
+    }else if(ORsensorVal_1 < midVal &&  ORsensorVal_2 < midVal &&
+       ORsensorVal_3 < midVal && ORsensorVal_4 < midVal){
+        moveForward(LINE_FOLLOW_SPEED);  
+    }
+  
+
+    if(ORsensorVal_1 < midVal - 100 &&  ORsensorVal_2 < midVal - 100 && ORsensorVal_3 < midVal - 100 && ORsensorVal_4 > midVal + 100 ){
+      sharpTurnRight(160, turningTime);
+    }else if(ORsensorVal_1 > midVal + 100 && ORsensorVal_2 < midVal - 100 &&  ORsensorVal_3 < midVal - 100 && ORsensorVal_4 < midVal - 100){
+      sharpTurnLeft(160, turningTime);
+    }    
+    
+    if( (ORsensorVal_1 + ORsensorVal_2/2) > ((ORsensorVal_3 + ORsensorVal_4)/2 + 500) ){
+      Serial.println("In turningleft");
+      turnLeftForward_Fast(TURNING_SPEED_MAX, turningTime);
+      //Stop();
+    }else if( (ORsensorVal_1 + ORsensorVal_2)/2 > ((ORsensorVal_3 + ORsensorVal_4)/2 + 200) ){
+      turnLeftForward_Slow(TURNING_SPEED_NORM, turningTime);
+    }
+    
+    if( (ORsensorVal_1 + ORsensorVal_2)/2 < ((ORsensorVal_3 + ORsensorVal_4)/2 - 500) ){
+      Serial.println("In turningrigft");
+      turnRightForward_Fast(TURNING_SPEED_MAX, turningTime);
+      //Stop();
+    }else if( (ORsensorVal_1 + ORsensorVal_2)/2 < ((ORsensorVal_3 + ORsensorVal_4)/2 - 200)){
+      turnRightForward_Slow(TURNING_SPEED_NORM, turningTime);
+    }
+    
+  }else{
+    Serial.println("In Stop");
+
+    //boolean isBreakpoint = checkBreakpoint(1000);
+
+    Stop();
+    
+    /*if(isBreakpoint == false){
+      Stop();
+    }*/  
+    /*int numCycle = 0;
+    for(numCycle = 0; numCycle <= 100; numCycle++){
+      
+    }*/
+    Serial.println(ORsensorVal_1);
+    Serial.println(ORsensorVal_2);
+    Serial.println(ORsensorVal_3);
+    Serial.println(ORsensorVal_4);
+    Serial.print(midVal);
   }
   
 }
@@ -218,22 +434,25 @@ char lineFollow(){
 //Preparing and calibrating
 void lineFollowPrepare(){
   int refVal = 0;
+  int count = 0;
   int i = 0;
 
   //Calibrating the sensors, finding max and min reflectance values
-  for(i = 15; i < 20; i++){
-    refVal = analogRead(i);
-    if(refVal > maxSensorVal){
-      maxSensorVal = refVal;
+  for(count = 0; count < 10; count++){
+    for(i = 15; i < 20; i++){
+      refVal = analogRead(i);
+      if(refVal > maxSensorVal){
+        maxSensorVal = refVal;
+      }
+  
+      if(refVal < minSensorVal){
+        minSensorVal = refVal;
+      }
+  
+      delay(1);
     }
-
-    minSensorVal = refVal;
-    if(refVal < minSensorVal){
-      minSensorVal = refVal;
-    }
-
-    delay(1);
   }
 
   midVal = (maxSensorVal + minSensorVal)/2;
 }
+
