@@ -11,8 +11,8 @@ const int M2 = 7;
  unsigned long timeold;
  void setup(){
  Serial.begin(9600); 
- 
- attachInterrupt(0, rpm_fan, FALLING);
+ pinMode(2,INPUT_PULLUP);
+ attachInterrupt(digitalPinToInterrupt(2), rpm_fan, FALLING);
 
 
    half_revolutions = 0;
@@ -20,7 +20,7 @@ const int M2 = 7;
    timeold = 0;
  }
  void loop(){
-   moveForward(70);
+   moveForward(255);
    if(digitalRead(2)==HIGH){
     pole="North";
 
@@ -28,19 +28,19 @@ const int M2 = 7;
    if(digitalRead(2)==LOW){
     pole="SOUTH";
   }
- if (half_revolutions >= 20) { 
+ if (half_revolutions >= 5) { 
      //Update RPM every 20 counts, increase this for better RPM resolution,
      //decrease for faster update
      rpm = 30*1000/(millis() - timeold)*half_revolutions;
     
-  /*   
-  Serial.print("RPM =\t"); //print the word "RPM" and tab.
-  Serial.print(rpm); // print the rpm value.
-  Serial.print("\t Hz=\t"); //print the word "Hz".
-  Serial.print(half_revolutions/2); //print revolutions per second or Hz. And print new line or enter
-  Serial.print("\t Pole:=\t");
-  Serial.println(pole);
-  */
+     
+    Serial.print("RPM =\t"); //print the word "RPM" and tab.
+    Serial.print(rpm); // print the rpm value.
+    Serial.print("\t Hz=\t"); //print the word "Hz".
+    Serial.print(half_revolutions/2); //print revolutions per second or Hz. And print new line or enter
+    Serial.print("\t Pole:=\t");
+    Serial.println(pole);
+    
    
    timeold = millis();
      half_revolutions = 0;
@@ -60,4 +60,3 @@ const int M2 = 7;
   analogWrite(E1, power);
   analogWrite(E2, power);
 }
-
