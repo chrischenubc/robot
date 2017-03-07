@@ -93,8 +93,8 @@ void mode1(){
   do {
     Serial.println("moving forward");
 
-     update_keyboard();
-    //update_instr();
+    // update_keyboard();
+    update_instr();
     if(flag!=1 || instr =='2' || instr =='3' ) {
       return; //check the interrupt flag
     }
@@ -109,8 +109,8 @@ void mode1(){
      dis=readSonar();
   }while(dis >= DISTANCE_LIMIT || dis ==-1);
  
-    update_keyboard();
-   // update_instr();
+   // update_keyboard();
+    update_instr();
     if(flag!=1 || instr =='2' || instr =='3' ) {
       return; //check the interrupt flag
     }
@@ -124,8 +124,8 @@ void mode2(){
   while(flag==2) {
     Serial.println("In mode 2");
 
-    update_keyboard(); 
-  //update_instr();
+   // update_keyboard(); 
+  update_instr();
     if(flag!=2 || instr =='1' || instr =='3' ) {
       return;
     }
@@ -144,8 +144,8 @@ void mode3(){
   
   while(flag==3 ){
    // Serial.println("In mode 3");
-   // read_instruction();
-    read_keyboard(); 
+    read_instruction();
+   // read_keyboard(); 
     //update_keyboard();
     if(flag!=3 || instr =='1' || instr =='2' ) {
       return;
@@ -448,8 +448,11 @@ void update_keyboard() {
   
 void update_instr() {
   if(BT.available()) {
-      instr = BT.read();
-      Serial.println("Bluetooth command received~~~~~~~~~~~~~~~~~~~");
+     String s;
+      s = BT.readString();
+      instr=s[0];
+      Serial.print("keyboard command received:    ");
+      Serial.println(instr);
     } 
     //commented out because i dont think it is useful
     /*else {
