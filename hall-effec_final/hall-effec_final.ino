@@ -74,7 +74,7 @@ if (record_time==0) {
 
 
 void hall_effect(){
-  while(digitalRead
+  while(digitalRead(HALL_EFFECT_PIN)==
   
   
 }

@@ -23,11 +23,10 @@ const int LM_PIN = A0;      //Pin for LM-35 temperature sensor
 const int SWITCH_PIN = 3;        //Pin for pull up Switch
 
 //define some constants here
-const int DISTANCE_LIMIT = 25;
+const int DISTANCE_LIMIT = 35;
 const int MAX_SPEED = 255;
 
-const int DECELERATION = 10
-;
+const int DECELERATION = 5;
 
 volatile byte half_revolutions;
 unsigned int rpm;
@@ -53,7 +52,7 @@ void setup()
   BT.begin(9600);
   
   //interrupt when button is read HIGH
-   attachInterrupt(digitalPinToInterrupt(SWITCH_PIN), isr, HIGH); 
+   //attachInterrupt(digitalPinToInterrupt(SWITCH_PIN), isr, HIGH); 
 //   attachInterrupt(0, rpm_fun, RISING);
 }
 
@@ -69,8 +68,8 @@ void loop()
   chooseMode(flag);
   update_flag(instr);
   Serial.print("Successfully changed the mode ");
-  Stop();
-  delay(1000); 
+  //Stop();
+  //delay(1000); 
 }
 
 void chooseMode(int flag){
@@ -87,9 +86,9 @@ void chooseMode(int flag){
 }
 
 void mode1(){
- 
+  //servo.write(90);  //make the sensor facing forward again
    Serial.println("In mode 1");
-  moveForward(255);
+  moveForward(180);
   do {
     Serial.println("moving forward");
 
@@ -115,6 +114,8 @@ void mode1(){
       return; //check the interrupt flag
     }
   int scanVal=scanAround(2);
+  Serial.print("degree is.....");
+  Serial.print(scanVal);
  rotate(scanVal);  
 }
 
@@ -196,7 +197,7 @@ void decelerate(int DECELERATION) {
     digitalWrite(M2, HIGH);
     analogWrite(E1, i);
     analogWrite(E2, i);
-    delay(20);
+    delay(10);
   }
 }
 
@@ -236,7 +237,7 @@ void turnLeft(long Time) {
   int maxDegree=0;
   servo.write(0); //turn the servo to 0 degree
   for(int i=0;i<=parts;i++){
-
+Serial.print("ssssssssssssssssssssssssssssssssssssss");
    /*  update_keyboard(); 
     if(flag!=1 || (instr=BT.read()) =='B' || instr =='M' ) {
       switch(instr){
@@ -248,7 +249,7 @@ void turnLeft(long Time) {
     vals[i]=readSonar();
     delay(500);
     if (vals[i]>=maxDegree){
-      maxDegree=i;
+      maxDegree=vals[i];
     }
   }
  servo.write(90);  //make the sensor facing forward again
@@ -271,11 +272,12 @@ void turnLeft(long Time) {
  * if degree=90, do nothing
  */
 void rotate(int degree){
+  Serial.print("rotate");
   if( 0<=degree && degree<90){
-    turnRight(750);
+    turnRight(325);
   }
   else if ( 90<degree && degree<=180){
-    turnLeft(750); //TODO Chanve the value to make it turn 90 degree
+    turnLeft(325); //TODO Chanve the value to make it turn 90 degree
   }
 }
 

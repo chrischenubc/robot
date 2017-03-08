@@ -107,7 +107,7 @@ void loop()
  */
 
 void mode1(){
- 
+  servo.write(90);  //make the sensor facing forward again
   Serial.println("In mode 1");
   moveForward(255);
   do {
@@ -138,7 +138,7 @@ void mode1(){
      break;
     }
      dis=readSonar();
-  }while(dis >= DISTANCE_LIMIT || dis ==-1 && main_switch == HIGH);
+  }while((dis >= DISTANCE_LIMIT || dis ==-1) && main_switch == HIGH);
 
     /* To detect whether the new signal has arrived
      * If there is a new signal, then update the instr
@@ -295,12 +295,20 @@ void turnLeft(long Time) {
   int maxDegree=0;
   servo.write(0); //turn the servo to 0 degree
   for(int i=0;i<=parts;i++){
-    
+
+   /*  update_keyboard(); 
+    if(flag!=1 || (instr=BT.read()) =='B' || instr =='M' ) {
+      switch(instr){
+        case 'M':flag=3;
+      }
+      return -1; //check the interrupt flag
+    }*/
     servo.write(i*180/parts);
-    vals[i]=readSonar();
     delay(500);
+    vals[i]=readSonar();
+    
     if (vals[i]>=maxDegree){
-      maxDegree=i;
+      maxDegree=vals[i];
     }
   }
  servo.write(90);  //make the sensor facing forward again
@@ -315,10 +323,10 @@ void turnLeft(long Time) {
  */
 void rotate(int degree){
   if( 0<=degree && degree<90){
-    turnRight(750);
+    turnRight(250);
   }
   else if ( 90<degree && degree<=180){
-    turnLeft(750); //TODO Chanve the value to make it turn 90 degree
+    turnLeft(250); //TODO Chanve the value to make it turn 90 degree
   }
 }
 
