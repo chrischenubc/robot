@@ -1,6 +1,13 @@
 # G5_A_P1
 
-Goole doc link:https://docs.google.com/document/d/1y6tSNcZeVZh3gu8qlVy5E_jHCz_95UTNbs3lxT9faHc/edit
+project 1 lab report link:  https://docs.google.com/document/d/1dsHnJC0QYqUfP9NKW_AUFimx2R0tROFao-e_4kjVbXY/edit#heading=h.9vn3mkifo2zk
+
+
+
+
+
+
+progress report  link:https://docs.google.com/document/d/1y6tSNcZeVZh3gu8qlVy5E_jHCz_95UTNbs3lxT9faHc/edit
 
 ##Android App
 

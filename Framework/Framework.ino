@@ -26,7 +26,7 @@ const int SWITCH_PIN = 3;        //Pin for pull up Switch
 const int DISTANCE_LIMIT = 35;
 const int MAX_SPEED = 255;
 
-const int DECELERATION = 5;
+const int DECELERATION = 45;
 
 volatile byte half_revolutions;
 unsigned int rpm;
@@ -197,23 +197,11 @@ void decelerate(int DECELERATION) {
     digitalWrite(M2, HIGH);
     analogWrite(E1, i);
     analogWrite(E2, i);
-    delay(10);
+    delay(5);
   }
 }
-
 void turnRight(long Time) {
-  unsigned long oldtime;
-  oldtime = millis();
-
-  while (millis() - oldtime <= Time) {
-    digitalWrite(M1, HIGH);
-    digitalWrite(M2, LOW);
-    analogWrite(E1, 255);
-    analogWrite(E2, 255);
-  }
-}
-
-void turnLeft(long Time) {
+  Serial.println("turn Right");
   unsigned long oldtime;
   oldtime = millis();
 
@@ -225,6 +213,18 @@ void turnLeft(long Time) {
   }
 }
 
+void turnLeft(long Time) {
+  Serial.println("turn left");
+  unsigned long oldtime;
+  oldtime = millis();
+
+  while (millis() - oldtime <= Time) {
+    digitalWrite(M1, HIGH);
+    digitalWrite(M2, LOW);
+    analogWrite(E1, 255);
+    analogWrite(E2, 255);
+  }
+}
 /**
  * scan the surrounding from 0 to 180 degrees
  * @param parts:divide 180 degrees into several parts
@@ -235,9 +235,10 @@ void turnLeft(long Time) {
  int scanAround(int parts){
   int vals[parts];
   int maxDegree=0;
+  int maxAngle=0;
   servo.write(0); //turn the servo to 0 degree
   for(int i=0;i<=parts;i++){
-Serial.print("ssssssssssssssssssssssssssssssssssssss");
+
    /*  update_keyboard(); 
     if(flag!=1 || (instr=BT.read()) =='B' || instr =='M' ) {
       switch(instr){
@@ -246,16 +247,31 @@ Serial.print("ssssssssssssssssssssssssssssssssssssss");
       return -1; //check the interrupt flag
     }*/
     servo.write(i*180/parts);
-    vals[i]=readSonar();
     delay(500);
+    vals[i]=readSonarAvg();
+    Serial.print("Distance at:");
+    Serial.println(i);
+    Serial.println(vals[i]);
+    
     if (vals[i]>=maxDegree){
+      maxAngle=i;
       maxDegree=vals[i];
     }
   }
  servo.write(90);  //make the sensor facing forward again
- return maxDegree;
+ return maxAngle;
 }
 
+int readSonarAvg(){
+  int a=readSonar();
+  delay(5);
+  int b=readSonar();
+  delay(5);
+  int c=readSonar();
+  delay(5);
+  int d=readSonar();
+  return (a+b+c+d)/4;
+}
 /*TODO: The robot will then use the servo motor to move the ultrasonic sensor 
  * independently to scan from left to the right side of the robot and picks the side 
  * that has the best/longest free space for movement and then it turns 90 degrees 
@@ -272,12 +288,11 @@ Serial.print("ssssssssssssssssssssssssssssssssssssss");
  * if degree=90, do nothing
  */
 void rotate(int degree){
-  Serial.print("rotate");
-  if( 0<=degree && degree<90){
-    turnRight(325);
+  if( degree==0){
+    turnRight(250);
   }
-  else if ( 90<degree && degree<=180){
-    turnLeft(325); //TODO Chanve the value to make it turn 90 degree
+  else if ( degree==2){
+    turnLeft(250); //TODO Chanve the value to make it turn 90 degree
   }
 }
 
@@ -293,7 +308,6 @@ long readSonar(){
     digitalWrite(TRIG_PIN, LOW);            //set trigger pin to LOW
     duration = pulseIn(ECHO_PIN, HIGH);     //read echo pin
     long temp=readTmpLM();                 //read temperature
-    temp=23; //TODO:change to LM 35 temp
     long sound_speed=331.5 + (0.6 * temp);                 //calculate the sound speed at the point
     distance = (duration * sound_speed * 0.0001)/2;        //compute distance from duration of echo Pin
     Serial.println(distance);
