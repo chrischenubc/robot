@@ -164,9 +164,9 @@ void mode1(){
 //basic functionality 2
 void mode2(){
   lineFollowPrepare();
-  delay(1000);
+  //delay(1000);
   while(flag==2){                //indicates line following
-    Serial.println("In mode 2");    //for debug use
+    //Serial.println("In mode 2");    //for debug use
    // update_keyboard();
     update_instr();
     if(digitalRead(MAIN_SWITCH_PIN)==LOW){
@@ -481,7 +481,6 @@ void read_instruction(){
 }
 
 /****************************************************************************
-
 /*
  * THIS FUNCTION IS FOR TESTING USE
  * TO READ THE SERIAL INPUT FROM KEYBOARD
@@ -810,8 +809,4 @@ void scanGround(){
   ORsensorVal_3 = analogRead(ORsensorpin_3);
   ORsensorVal_4 = analogRead(ORsensorpin_4);
 }
-
-
-
- 
 
