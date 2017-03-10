@@ -40,7 +40,7 @@ const int TURNING_SPEED_MAX = 225;
 
 
 //define some global variables here
-int flag=1;
+
 char instr='1';
 int dis;
 int main_switch = 0; 
@@ -87,8 +87,9 @@ void loop()
   main_switch = digitalRead(MAIN_SWITCH_PIN);
   if(main_switch == HIGH){    
    /* choose the mode based on the pushed button */  
-   instr=readSwitch();
-   chooseMode(instr);
+   chooseMode(flag);
+   readSwitch();
+   update_flag(instr);
   /* update the flag based on the signal received */
   
   /* after successfully change the mode, make it stop and wait for 1 sec */
@@ -126,7 +127,7 @@ void mode1(){
     if(digitalRead(MAIN_SWITCH_PIN)==LOW){
       return;
     }
-    if( instr =='2' || instr =='3' || digitalRead( SWITCH_PIN)==LOW) {
+    if( flag!=1 ||instr =='2' || instr =='3' || digitalRead( SWITCH_PIN)==LOW) {
       return;   //check the interrupt flag
     }
     
@@ -146,7 +147,7 @@ void mode1(){
    if(digitalRead(MAIN_SWITCH_PIN)==LOW){
     return;
    }
-    if( instr =='2' || instr =='3' || digitalRead( SWITCH_PIN)==LOW ) {
+    if(flag!=1 || instr =='2' || instr =='3' || digitalRead( SWITCH_PIN)==LOW ) {
       return; //return to loop method
     }
     Stop();
@@ -161,7 +162,7 @@ void mode1(){
 void mode2(){
   lineFollowPrepare();
   delay(1000);
-  while(instr=='2'){                //indicates line following
+  while(flag==2){                //indicates line following
     Serial.println("In mode 2");    //for debug use
     update_instr();
     if(digitalRead(SWITCH_PIN) ==HIGH){
@@ -199,15 +200,16 @@ void mode3(){
  * if it is '2', then change to mode2;
  * if it is '3', then change to mode3
  */
-void chooseMode(char instr){
-  if(instr=='1'){
-     mode1();
-  }
-  else if (instr=='2'){
-     mode2();
-  }
-  else if (instr=='3'){
-     mode3();
+void chooseMode(int flag){
+  switch(flag){
+    case 1:mode1();
+    break;
+    case 2:mode2();
+    break;
+    case 3:mode3();
+    break;
+    default : 
+    mode1();
   }
 }
 
@@ -219,6 +221,19 @@ char readSwitch(){
     return '1';
    }   
 }
+
+void update_flag(char instr){
+  if(instr=='1'){
+        flag=1;
+      }
+  else if (instr=='2'){
+        flag=2;
+  }
+  else if (instr=='3'){
+        flag=3;
+  }      
+}
+
 
 /*
  * The function is to move robot forward at the given power
